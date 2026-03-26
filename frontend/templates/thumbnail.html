@@ -1,0 +1,76 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Legal AI - Intelligent Legal Assistance</title>
+    <link rel="icon" type="image/x-icon" href="{% static 'images/p1.jpg' %}">
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'css/layout.css' %}">
+    <link rel="stylesheet" href="{% static 'css/components.css' %}">
+    <link rel="stylesheet" href="{% static 'css/pages/home.css' %}">
+</head>
+<body class="landing-page">
+
+    <!-- Navbar -->
+    <header class="navbar">
+        <div class="navbar__container">
+            <a href="/" class="navbar__brand">Legal<span> AI Assistant</span></a>
+            
+            <div class="flex gap-3">
+                <a href="{% url 'login' %}" class="btn btn--outline">Login</a>
+                <a href="{% url 'register' %}" class="btn btn--accent">Register</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="landing-hero">
+        <h1 class="landing-hero__title">Welcome to <span>Legal AI</span></h1>
+        <p class="landing-hero__subtitle">Your intelligent legal assistant powered by AI. Get instant answers to legal questions, explore Nepal's laws, and personalize your experience.</p>
+        <div class="landing-hero__actions">
+            <a href="{% url 'register' %}" class="btn btn--accent btn--lg">Get Started</a>
+            <a href="{% url 'login' %}" class="btn btn--outline btn--lg" style="border-color: white; color: white;">Learn More</a>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="landing-features">
+        <div class="landing-features__grid">
+            <div class="landing-feature">
+                <div class="landing-feature__icon">⚖️</div>
+                <h3 class="landing-feature__title">Legal Q&A</h3>
+                <p class="landing-feature__text">Get instant answers to your legal questions from our AI-powered chatbot.</p>
+            </div>
+            
+            <div class="landing-feature">
+                <div class="landing-feature__icon">📚</div>
+                <h3 class="landing-feature__title">Law Explorer</h3>
+                <p class="landing-feature__text">Browse and search through Nepal's legal documents and regulations.</p>
+            </div>
+            
+            <div class="landing-feature">
+                <div class="landing-feature__icon">🎯</div>
+                <h3 class="landing-feature__title">Personalization</h3>
+                <p class="landing-feature__text">Customize your experience based on your legal interests and needs.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer__container">
+            <div class="footer__members">
+                <span class="footer__member">Bilakshan Bikram Bist (Roll No. 16)</span>
+                <span class="footer__member">Jeyush Pokhrel (Roll No. 19)</span>
+                <span class="footer__member">Manjul Malla (Roll No. 21)</span>
+            </div>
+            <div class="footer__project">
+                BSC.CSIT | Legal AI Project | Academic Year 2082
+            </div>
+        </div>
+    </footer>
+
+</body>
+</html>

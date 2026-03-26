@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/pages/explorer.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <div class="explorer">
+            <!-- Page Header -->
+            <div class="explorer__header">
+                <h1 class="explorer__title">{{ ui.title }}</h1>
+                <p class="explorer__subtitle">{{ ui.subtitle }}</p>
+            </div>
+
+            <!-- Language Toggle -->
+            <div class="explorer__lang-toggle">
+                <a href="?lang=en&q={{ query }}&category={{ selected_category }}&page={{ laws.number }}" class="explorer__lang-btn {% if lang == 'en' or not lang %}active{% endif %}">English</a>
+                <a href="?lang=np&q={{ query }}&category={{ selected_category }}&page={{ laws.number }}" class="explorer__lang-btn {% if lang == 'np' %}active{% endif %}">नेपाली</a>
+            </div>
+
+            <!-- Search + Filter (Pure Django Form) -->
+            <div class="explorer__filters">
+                <form action="{% url 'explorer' %}" method="get" class="explorer__search">
+                    <input type="text" name="q" placeholder="{{ ui.search_placeholder }}" value="{{ query }}" class="form-input">
+                    <input type="hidden" name="lang" value="{{ lang }}">
+                    <select name="category" id="law-category" class="form-select">
+                        <option value="">{{ ui.all_categories }}</option>
+                        {% for category in categories %}
+                        <option value="{{ category }}" {% if selected_category == category %}selected{% endif %}>
+                        {{ category }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit" class="btn btn--primary">{{ ui.search_btn }}</button>
+                    {% if query or selected_category %}
+                    <a href="{% url 'explorer' %}?lang={{ lang }}" class="btn btn--secondary">{{ ui.clear_btn }}</a>
+                    {% endif %}
+                </form>
+                
+                <!-- Quick Category Links -->
+                <div class="explorer__category-links">
+                    <span class="category-label">Categories:</span>
+                    <a href="{% url 'explorer' %}?lang={{ lang }}" class="category-link {% if not selected_category %}active{% endif %}">All</a>
+                    {% for category in categories %}
+                    <a href="{% url 'explorer' %}?category={{ category }}&lang={{ lang }}" class="category-link {% if selected_category == category %}active{% endif %}">{{ category }}</a>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Results Summary -->
+            {% if query or selected_category %}
+            <div class="explorer__results-summary">
+                <p>{{ ui.found }} <strong>{{ laws|length }}</strong> law{{ laws|pluralize }}{% if query %} {{ ui.matching }} "{{ query }}"{% endif %}{% if selected_category %} {{ ui.in }} {{ selected_category }}{% endif %}</p>
+            </div>
+            {% endif %}
+
+            <!-- Empty State / No Results -->
+            {% if not laws %}
+            <div class="explorer__empty">
+                <div class="empty-icon">📚</div>
+                <h3>{{ ui.no_results }}</h3>
+                <p>{{ ui.no_results_desc }}</p>
+                <a href="{% url 'explorer' %}?lang={{ lang }}" class="btn btn--primary">{{ ui.clear_filters }}</a>
+            </div>
+            {% else %}
+
+            <!-- Law List with Pagination -->
+            <div class="explorer__list">
+                {% for law in laws %}
+                <div class="explorer__card">
+                    {% if law.category %}
+                    <span class="explorer__card-category">{{ law.category }}</span>
+                    {% endif %}
+                    <h2 class="explorer__card-title">{{ law.title_en }}</h2>
+                    <p class="explorer__card-summary">{{ law.summary_en }}</p>
+                    
+                    <!-- All Sections Data (Expanded by Default) -->
+                    {% if law.sections %}
+                    <div class="explorer__all-sections">
+                        <h3 class="sections-header">{{ ui.view_sections }} ({{ law.sections|length }})</h3>
+                        <div class="sections-grid">
+                        {% for section in law.sections %}
+                            <div class="section-card">
+                                <div class="section-title">{{ section.section_en }}</div>
+                                {% if section.content_en %}
+                                <div class="section-content">{{ section.content_en }}</div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Pagination -->
+            {% if paginator %}
+            <nav class="explorer__pagination">
+                {% if laws.has_previous %}
+                <a href="?page=1&q={{ query }}&category={{ selected_category }}&lang={{ lang }}" class="pagination__btn">&laquo; First</a>
+                <a href="?page={{ laws.previous_page_number }}&q={{ query }}&category={{ selected_category }}&lang={{ lang }}" class="pagination__btn">Previous</a>
+                {% endif %}
+                
+                <span class="pagination__info">Page {{ laws.number }} of {{ laws.paginator.num_pages }}</span>
+                
+                {% if laws.has_next %}
+                <a href="?page={{ laws.next_page_number }}&q={{ query }}&category={{ selected_category }}&lang={{ lang }}" class="pagination__btn">Next</a>
+                <a href="?page={{ laws.paginator.num_pages }}&q={{ query }}&category={{ selected_category }}&lang={{ lang }}" class="pagination__btn">Last &raquo;</a>
+                {% endif %}
+            </nav>
+            {% endif %}
+
+            {% endif %}
+
+
+            <!-- Disclaimer -->
+            <div class="explorer__disclaimer">
+                ⚠ {{ ui.disclaimer }}. {{ ui.disclaimer2 }}.
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock %}

@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/pages/personalization.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="section personalization">
+    <div class="container">
+        <!-- Page Header -->
+        <div class="personalization__header">
+            <h1 class="personalization__title">Personalization Settings</h1>
+            <p class="personalization__subtitle">Customize your experience. Welcome, {{ user.first_name|default:user.name|default:"User" }}!</p>
+        </div>
+
+        <!-- Messages -->
+        {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+            <div class="alert alert--{{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Preferences Form -->
+        <form method="POST" action="{% url 'save_preferences' %}" class="personalization__form" style="max-width: 700px;">
+            {% csrf_token %}
+            
+            <!-- Topics Selection -->
+            <div style="margin-bottom: var(--spacing-8);">
+                <h3 style="margin-bottom: var(--spacing-4); color: var(--color-gray-800);">Select Your Areas of Interest</h3>
+                <p class="personalization__hint">Choose the legal topics you want to receive updates about</p>
+                
+                <div class="personalization__checkbox-group" style="margin-top: var(--spacing-4);">
+                    <label>
+                        <input type="checkbox" name="topics" value="constitution" 
+                            {% if 'constitution' in user_preferences.topics %}checked{% endif %}>
+                        <span>Constitution of Nepal</span>
+                    </label>
+                    <label>
+                        <input type="checkbox" name="topics" value="criminal" 
+                            {% if 'criminal' in user_preferences.topics %}checked{% endif %}>
+                        <span>Criminal Law (Muluki Criminal Code)</span>
+                    </label>
+                    <label>
+                        <input type="checkbox" name="topics" value="civil" 
+                            {% if 'civil' in user_preferences.topics %}checked{% endif %}>
+                        <span>Civil Law</span>
+                    </label>
+                    <label>
+                        <input type="checkbox" name="topics" value="evidence" 
+                            {% if 'evidence' in user_preferences.topics %}checked{% endif %}>
+                        <span>Evidence Act</span>
+                    </label>
+                    <label>
+                        <input type="checkbox" name="topics" value="company" 
+                            {% if 'company' in user_preferences.topics %}checked{% endif %}>
+                        <span>Company Law</span>
+                    </label>
+                    <label>
+                        <input type="checkbox" name="topics" value="property" 
+                            {% if 'property' in user_preferences.topics %}checked{% endif %}>
+                        <span>Property & Land Law</span>
+                    </label>
+                </div>
+            </div>
+
+            
+            <!-- Language Selection -->
+            <div style="margin-bottom: var(--spacing-8);">
+                <h3 style="margin-bottom: var(--spacing-4); color: var(--color-gray-800);">Preferred Language</h3>
+                
+                <div class="personalization__radio-group">
+                    <label>
+                        <input type="radio" name="language" value="en" 
+                            {% if user_preferences.language == 'en' %}checked{% endif %}>
+                        <span>English</span>
+                    </label>
+                    <label>
+                        <input type="radio" name="language" value="ne" 
+                            {% if user_preferences.language == 'ne' %}checked{% endif %}>
+                        <span>Nepali (नेपाली)</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Theme Selection -->
+            <div style="margin-bottom: var(--spacing-8);">
+                <h3 style="margin-bottom: var(--spacing-4); color: var(--color-gray-800);">Choose Your Theme</h3>
+                
+                <div class="personalization__theme-options">
+                    <label class="personalization__theme-option">
+                        <input type="radio" name="theme" value="light" 
+                            {% if user_preferences.theme == 'light' %}checked{% endif %}>
+                        <div class="theme-card">
+                            <div style="font-size: 32px; margin-bottom: var(--spacing-2);">☀️</div>
+                            <div style="font-weight: 600;">Light Mode</div>
+                            <p style="font-size: var(--font-size-sm); color: var(--color-gray-500); margin: var(--spacing-2) 0 0;">Clean & Bright</p>
+                        </div>
+                    </label>
+                    <label class="personalization__theme-option">
+                        <input type="radio" name="theme" value="dark" 
+                            {% if user_preferences.theme == 'dark' %}checked{% endif %}>
+                        <div class="theme-card">
+                            <div style="font-size: 32px; margin-bottom: var(--spacing-2);">🌙</div>
+                            <div style="font-weight: 600;">Dark Mode</div>
+                            <p style="font-size: var(--font-size-sm); color: var(--color-gray-500); margin: var(--spacing-2) 0 0;">Easy on Eyes</p>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div style="text-align: center; margin-top: var(--spacing-8);">
+                <button type="submit" class="btn btn--primary" style="padding: var(--spacing-4) var(--spacing-10); font-size: var(--font-size-lg);">
+                    Save Preferences
+                </button>
+            </div>
+
+            <!-- Disclaimer -->
+            <div class="personalization__disclaimer">
+                ⚠️ Note: Your preferences are saved locally in your session. This helps personalize your experience with the Legal AI Assistant.
+            </div>
+        </form>
+    </div>
+</section>
+{% endblock %}

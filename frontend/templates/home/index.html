@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/pages/home.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <!-- Page Header -->
+        <div class="page-header" style="text-align: center; margin-bottom: var(--spacing-8);">
+            <h1>AI-Powered Legal Assistance</h1>
+            <p style="color: var(--color-gray-600); font-size: var(--font-size-lg);">Welcome, {{ user.name|default:"User" }}! Ask questions, explore laws, and get guidance.</p>
+        </div>
+
+        <!-- Search Form -->
+        <div class="card" style="max-width: 600px; margin: 0 auto var(--spacing-8);">
+            <div class="card__body">
+                <form id="questionForm" method="POST" action="{% url 'search_questions' %}">
+                    {% csrf_token %}
+                    <div class="flex gap-3">
+                        <input type="text" id="search" name="question" class="form-input" placeholder="Ask a legal question..." value="{{ request.session.current_question|default:'' }}" required style="flex: 1;">
+                        <button type="button" class="btn btn--primary" onclick="submitQuestion()">Ask</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div id="message-container"></div>
+
+        <!-- Features -->
+        <div class="grid grid-cols-3 grid-gap-4" style="margin-top: var(--spacing-8);">
+            <div class="card">
+                <div class="card__body" style="text-align: center;">
+                    <div style="font-size: 40px; margin-bottom: var(--spacing-3);">✓</div>
+                    <h3 style="margin-bottom: var(--spacing-2);">Legal Chatbot</h3>
+                    <p style="color: var(--color-gray-600); margin: 0;">Get instant answers to legal questions</p>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card__body" style="text-align: center;">
+                    <div style="font-size: 40px; margin-bottom: var(--spacing-3);">✓</div>
+                    <h3 style="margin-bottom: var(--spacing-2);">Law Explorer</h3>
+                    <p style="color: var(--color-gray-600); margin: 0;">Browse and understand legal documents</p>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card__body" style="text-align: center;">
+                    <div style="font-size: 40px; margin-bottom: var(--spacing-3);">✓</div>
+                    <h3 style="margin-bottom: var(--spacing-2);">Personalized</h3>
+                    <p style="color: var(--color-gray-600); margin: 0;">Get tailored legal guidance</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Disclaimer -->
+        <div class="alert alert--warning" style="max-width: 600px; margin: var(--spacing-8) auto 0; text-align: center;">
+            ⚠ I am not a lawyer. This system provides informational guidance only.
+        </div>
+    </div>
+</section>
+
+<script src="{% static 'js/index.js' %}"></script>
+{% endblock %}

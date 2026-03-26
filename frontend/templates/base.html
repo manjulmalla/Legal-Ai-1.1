@@ -1,0 +1,57 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Legal AI</title>
+
+    <!-- Base CSS -->
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'css/layout.css' %}">
+    <link rel="stylesheet" href="{% static 'css/components.css' %}">
+    <link rel="stylesheet" href="{% static 'css/pages/home.css' %}">
+
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="page-wrapper">
+
+    <!-- Navbar -->
+    <header class="navbar">
+        <div class="navbar__container">
+            <a href="/" class="navbar__brand">Legal<span> AI Assistant</span></a>
+            
+            <nav class="navbar__menu">
+                <a href="/home/" class="navbar__link">Home</a>
+                <a href="/chatbot/" class="navbar__link">Chatbot</a>
+                <a href="/explorer/" class="navbar__link">Explorer</a>
+                <a href="/personalization/" class="navbar__link">Personalization</a>
+                <a href="/dashboard/" class="navbar__link">Dashboard</a>
+            </nav>
+            
+            <a href="{% url 'logout' %}" class="navbar__cta">Logout →</a>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer__container">
+            <div class="footer__members">
+                <span class="footer__member">Bilakshan Bikram Bist (Roll No. 16)</span>
+                <span class="footer__member">Jeyush Pokhrel (Roll No. 19)</span>
+                <span class="footer__member">Manjul Malla (Roll No. 21)</span>
+            </div>
+            <div class="footer__project">
+                BSC.CSIT | Legal AI Project | Academic Year 2082
+            </div>
+        </div>
+    </footer>
+
+</body>
+</html>

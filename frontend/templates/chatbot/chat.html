@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/pages/chat.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="container">
+
+    <div class="chat-layout">
+
+        <!-- 📚 Sidebar -->
+        <aside class="chat-sidebar">
+            <button class="new-chat-btn" onclick="startNewChat()">+ New Chat</button>
+            <ul class="chat-history" id="chat-history-list">
+                <!-- Chat conversations will be loaded here -->
+            </ul>
+        </aside>
+
+        <!-- 💬 Main Chat -->
+        <div class="chat-container">
+
+            <!-- Header -->
+            <div class="chat-header">
+                <h2>⚖️ AI Legal Assistant</h2>
+               
+            </div>
+
+            <!-- Messages -->
+            <!-- Messages Area -->
+            <div 
+                class="chat-messages" 
+                id="chat-window"
+                role="log"
+                aria-live="polite"
+                aria-atomic="false"
+                aria-label="Chat messages"
+                tabindex="0"
+            >
+                <!-- Chat messages will be dynamically added here -->
+                <div class="chat-empty-state" id="chat-empty-state">
+                    <div class="empty-icon">💬</div>
+                    <p>Start a conversation with the legal assistant</p>
+                </div>
+            </div>
+
+            <!-- Typing Indicator -->
+            <div id="typing" class="typing hidden">AI is typing...</div>
+
+            <!-- Input -->
+            <form id="chat-form" class="chat-input">
+                <textarea
+                    id="question-input"
+                    class="chat-input__field"
+                    placeholder="Ask your legal question..."
+                    rows="1"
+                    required
+                ></textarea>
+                <button type="submit" class="btn-send">➤</button>
+            </form>
+
+            <!-- Disclaimer -->
+            <div class="chat-disclaimer">
+                ⚠ This chatbot provides informational guidance only and is not a lawyer.
+            </div>
+
+        </div>
+    </div>
+
+</section>
+
+
+<script src="{% static 'js/chat.js' %}"></script>
+{% endblock %}

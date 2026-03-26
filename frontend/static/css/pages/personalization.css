@@ -1,0 +1,144 @@
+/* ============================================
+   MODERN PERSONALIZATION PAGE (UPGRADED)
+   ============================================ */
+
+/* Container */
+
+
+/* Header */
+.personalization__header {
+    text-align: center;
+    margin-bottom: var(--spacing-10);
+}
+
+.personalization__title {
+    font-size: var(--font-size-4xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-gray-900);
+    margin-bottom: var(--spacing-3);
+}
+
+.personalization__subtitle {
+    font-size: var(--font-size-lg);
+    color: var(--color-gray-600);
+}
+
+/* Form Card */
+.personalization__form {
+    background: var(--color-white);
+    padding: var(--spacing-8);
+
+    
+    transition: transform 0.3s ease;
+}
+
+.personalization__form:hover {
+    transform: translateY(-3px);
+}
+
+/* Groups */
+.personalization__checkbox-group,
+.personalization__radio-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-3);
+}
+
+/* Options */
+.personalization__checkbox-group label,
+.personalization__radio-group label {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+    cursor: pointer;
+    padding: var(--spacing-3);
+    border-radius: var(--radius-md);
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+}
+
+/* Hover Effect */
+.personalization__checkbox-group label:hover,
+.personalization__radio-group label:hover {
+    background: #f3f4f6;
+    border-color: #e5e7eb;
+}
+
+/* Selected Effect */
+.personalization__checkbox-group input:checked + span,
+.personalization__radio-group input:checked + span {
+    font-weight: 600;
+    color: var(--color-primary);
+}
+
+/* Inputs */
+.personalization__checkbox-group input,
+.personalization__radio-group input {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--color-primary);
+}
+
+/* Hint */
+.personalization__hint {
+    margin-top: var(--spacing-2);
+    font-size: var(--font-size-xs);
+    color: var(--color-gray-500);
+}
+
+/* Theme Options */
+.personalization__theme-options {
+    display: flex;
+    gap: var(--spacing-4);
+    margin-top: var(--spacing-4);
+}
+
+.personalization__theme-option {
+    flex: 1;
+    padding: var(--spacing-5);
+    border-radius: var(--radius-xl);
+    border: 2px solid #e5e7eb;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.25s ease;
+    background: #fafafa;
+}
+
+/* Hover */
+.personalization__theme-option:hover {
+    transform: scale(1.03);
+    border-color: var(--color-primary-light);
+}
+
+/* Active */
+.personalization__theme-option input:checked + .theme-card {
+    border-color: var(--color-primary);
+    background: #eef2ff;
+}
+
+/* Theme Card (inside label) */
+.theme-card {
+    padding: 10px;
+}
+
+/* Disclaimer */
+.personalization__disclaimer {
+    margin-top: var(--spacing-8);
+    padding: var(--spacing-4);
+    background: #f9fafb;
+    border-radius: var(--radius-md);
+    text-align: center;
+    color: var(--color-gray-500);
+    font-size: var(--font-size-sm);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+    .personalization__form {
+        padding: var(--spacing-5);
+    }
+
+    .personalization__theme-options {
+        flex-direction: column;
+    }
+}

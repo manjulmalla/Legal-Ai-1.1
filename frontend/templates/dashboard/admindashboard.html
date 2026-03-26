@@ -1,0 +1,347 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/pages/dashboard.css' %}">
+<style>
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+    }
+    .modal.show {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .modal__content {
+        background: white;
+        padding: var(--spacing-8);
+        border-radius: var(--radius-xl);
+        width: 90%;
+        max-width: 500px;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+    .modal__header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: var(--spacing-6);
+    }
+    .modal__close {
+        background: none;
+        border: none;
+        font-size: 24px;
+        cursor: pointer;
+    }
+    .tab-buttons {
+        display: flex;
+        gap: var(--spacing-2);
+        margin-bottom: var(--spacing-6);
+        border-bottom: 2px solid var(--color-gray-200);
+    }
+    .tab-btn {
+        padding: var(--spacing-3) var(--spacing-6);
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-weight: 600;
+        color: var(--color-gray-600);
+        border-bottom: 2px solid transparent;
+        margin-bottom: -2px;
+    }
+    .tab-btn.active {
+        color: var(--color-primary);
+        border-bottom-color: var(--color-primary);
+    }
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: var(--spacing-4);
+    }
+    .data-table th, .data-table td {
+        padding: var(--spacing-3);
+        text-align: left;
+        border-bottom: 1px solid var(--color-gray-200);
+    }
+    .data-table th {
+        background: var(--color-gray-50);
+        font-weight: 600;
+    }
+    .data-table tr:hover {
+        background: var(--color-gray-50);
+    }
+    .action-btns {
+        display: flex;
+        gap: var(--spacing-2);
+    }
+    .btn-sm {
+        padding: var(--spacing-1) var(--spacing-3);
+        font-size: var(--font-size-sm);
+    }
+    .section-card {
+        background: white;
+        border-radius: var(--radius-xl);
+        padding: var(--spacing-6);
+        margin-bottom: var(--spacing-6);
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="section admin-dashboard">
+    <div class="container">
+        <!-- Header -->
+        <div class="dashboard-header">
+            <div>
+                <h1 class="dashboard-header__title">Legal AI Admin Dashboard</h1>
+                <p style="color: var(--color-gray-600); margin-top: var(--spacing-2);">Manage users and view analytics</p>
+            </div>
+        </div>
+
+        <!-- Messages -->
+        {% if messages %}
+        <div class="messages" style="margin-bottom: var(--spacing-6);">
+            {% for message in messages %}
+            <div class="alert alert--{{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Analytics Cards -->
+        <div class="admin-stats">
+            <div class="stat-card">
+                <div class="stat-card__header">
+                    <div class="stat-card__icon stat-card__icon--primary">👥</div>
+                </div>
+                <div class="stat-card__value">{{ analytics.totalUsers|default:0 }}</div>
+                <div class="stat-card__label">Total Users</div>
+                <p style="font-size: var(--font-size-xs); color: var(--color-gray-500); margin-top: var(--spacing-2);">Registered users</p>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-card__header">
+                    <div class="stat-card__icon stat-card__icon--success">📊</div>
+                </div>
+                <div class="stat-card__value">{{ analytics.totalQueries|default:0 }}</div>
+                <div class="stat-card__label">Total Queries</div>
+                <p style="font-size: var(--font-size-xs); color: var(--color-gray-500); margin-top: var(--spacing-2);">Questions asked</p>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-card__header">
+                    <div class="stat-card__icon stat-card__icon--info">💬</div>
+                </div>
+                <div class="stat-card__value">{{ analytics.activeSessions|default:0 }}</div>
+                <div class="stat-card__label">Active Sessions</div>
+                <p style="font-size: var(--font-size-xs); color: var(--color-gray-500); margin-top: var(--spacing-2);">Currently active</p>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-card__header">
+                    <div class="stat-card__icon stat-card__icon--warning">✓</div>
+                </div>
+                <div class="stat-card__value">{{ analytics.resolvedQueries|default:0 }}</div>
+                <div class="stat-card__label">Resolved</div>
+                <p style="font-size: var(--font-size-xs); color: var(--color-gray-500); margin-top: var(--spacing-2);">Questions answered</p>
+            </div>
+        </div>
+
+        <!-- User Management Section -->
+        <div class="section-card" style="margin-top: var(--spacing-6);">
+            <div class="modal__header">
+                <h3>User Management</h3>
+                <button class="btn btn--primary" onclick="showModal('addUserModal')">+ Add User</button>
+            </div>
+            
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for u in users %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ u.name }}</td>
+                        <td>{{ u.email }}</td>
+                        <td>
+                            <span class="badge badge--{% if u.role == 'admin' %}warning{% else %}primary{% endif %}">
+                                {{ u.role }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="action-btns">
+                                <button type="button" class="btn btn-sm btn--secondary" 
+                                    onclick="editUser('{{ u.id_str }}', '{{ u.name }}', '{{ u.email }}', '{{ u.role }}')">
+                                    Edit
+                                </button>
+                                <form method="POST" style="display:inline;">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="delete">
+                                    <input type="hidden" name="user_id" value="{{ u.id_str }}">
+                                    <button type="submit" class="btn btn-sm btn--danger" onclick="return confirm('Delete this user?')">Delete</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" style="text-align:center; color: var(--color-gray-500);">No users found</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Recent Conversations -->
+        <div class="section-card">
+            <div class="modal__header">
+                <h3>Recent Conversations</h3>
+            </div>
+            
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>User</th>
+                        <th>Question</th>
+                        <th>Answer Preview</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for conv in conversations %}
+                    <tr>
+                        <td>{{ conv.id|default:forloop.counter }}</td>
+                        <td>{{ conv.userName|default:"User" }}</td>
+                        <td>{{ conv.question|truncatechars:30 }}</td>
+                        <td>{{ conv.answer|truncatechars:30 }}</td>
+                        <td>{{ conv.createdAt|slice:":10" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" style="text-align:center; color: var(--color-gray-500);">No conversations found</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
+<!-- Add User Modal -->
+<div id="addUserModal" class="modal">
+    <div class="modal__content">
+        <div class="modal__header">
+            <h3>Add New User</h3>
+            <button class="modal__close" onclick="hideModal('addUserModal')">&times;</button>
+        </div>
+        <form method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="add">
+            
+            <div style="margin-bottom: var(--spacing-4);">
+                <label class="form-label">Name</label>
+                <input type="text" name="name" class="form-input" required>
+            </div>
+            
+            <div style="margin-bottom: var(--spacing-4);">
+                <label class="form-label">Email</label>
+                <input type="email" name="email" class="form-input" required>
+            </div>
+            
+            <div style="margin-bottom: var(--spacing-4);">
+                <label class="form-label">Password</label>
+                <input type="password" name="password" class="form-input" required>
+            </div>
+            
+            <div style="margin-bottom: var(--spacing-4);">
+                <label class="form-label">Role</label>
+                <select name="role" class="form-input">
+                    <option value="user">User</option>
+                    <option value="admin">Admin</option>
+                </select>
+            </div>
+            
+            <button type="submit" class="btn btn--primary" style="width:100%;">Create User</button>
+        </form>
+    </div>
+</div>
+
+<!-- Edit User Modal -->
+<div id="editUserModal" class="modal">
+    <div class="modal__content">
+        <div class="modal__header">
+            <h3>Edit User</h3>
+            <button class="modal__close" onclick="hideModal('editUserModal')">&times;</button>
+        </div>
+        <form method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="edit">
+            <input type="hidden" name="user_id" id="edit_user_id">
+            
+            <div style="margin-bottom: var(--spacing-4);">
+                <label class="form-label">Name</label>
+                <input type="text" name="name" id="edit_name" class="form-input" required>
+            </div>
+            
+            <div style="margin-bottom: var(--spacing-4);">
+                <label class="form-label">Email</label>
+                <input type="email" name="email" id="edit_email" class="form-input" required>
+            </div>
+            
+            <div style="margin-bottom: var(--spacing-4);">
+                <label class="form-label">New Password (leave blank to keep current)</label>
+                <input type="password" name="password" class="form-input">
+            </div>
+            
+            <div style="margin-bottom: var(--spacing-4);">
+                <label class="form-label">Role</label>
+                <select name="role" id="edit_role" class="form-input">
+                    <option value="user">User</option>
+                    <option value="admin">Admin</option>
+                </select>
+            </div>
+            
+            <button type="submit" class="btn btn--primary" style="width:100%;">Update User</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    function showModal(modalId) {
+        document.getElementById(modalId).classList.add('show');
+    }
+    
+    function hideModal(modalId) {
+        document.getElementById(modalId).classList.remove('show');
+    }
+    
+    function editUser(id, name, email, role) {
+        document.getElementById('edit_user_id').value = id;
+        document.getElementById('edit_name').value = name;
+        document.getElementById('edit_email').value = email;
+        document.getElementById('edit_role').value = role;
+        showModal('editUserModal');
+    }
+    
+    window.onclick = function(event) {
+        if (event.target.classList.contains('modal')) {
+            event.target.classList.remove('show');
+        }
+    }
+</script>
+{% endblock %}
