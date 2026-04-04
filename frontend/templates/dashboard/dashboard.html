@@ -10,8 +10,13 @@
     <div class="container">
         <div class="dashboard-header">
             <div>
-                <h1 class="dashboard-header__title">Welcome, {{ user.first_name }}</h1>
+                <h1 class="dashboard-header__title">Welcome, {{ user.first_name|default:user.name }}</h1>
                 <p style="color: var(--color-gray-600); margin-top: var(--spacing-2);">Here's your AI activity summary and personalized insights.</p>
+            </div>
+            <div class="dashboard-header__actions">
+                <a href="{% url 'chat' %}" class="btn btn--primary">
+                    <span>💬</span> New Query
+                </a>
             </div>
         </div>
 
@@ -21,7 +26,7 @@
                 <div class="stat-card__header">
                     <div class="stat-card__icon stat-card__icon--primary">📊</div>
                 </div>
-                <div class="stat-card__value">42</div>
+                <div class="stat-card__value">{{ total_queries|default:"0" }}</div>
                 <div class="stat-card__label">Total Queries</div>
                 <p style="font-size: var(--font-size-xs); color: var(--color-gray-500); margin-top: var(--spacing-2);">Questions you asked this month</p>
             </div>
@@ -30,7 +35,7 @@
                 <div class="stat-card__header">
                     <div class="stat-card__icon stat-card__icon--success">⭐</div>
                 </div>
-                <div class="stat-card__value">5</div>
+                <div class="stat-card__value">{{ favorite_topics|default:"0" }}</div>
                 <div class="stat-card__label">Favorite Topics</div>
                 <p style="font-size: var(--font-size-xs); color: var(--color-gray-500); margin-top: var(--spacing-2);">Topics you follow</p>
             </div>
@@ -39,7 +44,7 @@
                 <div class="stat-card__header">
                     <div class="stat-card__icon stat-card__icon--info">👥</div>
                 </div>
-                <div class="stat-card__value">3</div>
+                <div class="stat-card__value">{{ active_sessions|default:"0" }}</div>
                 <div class="stat-card__label">Active Sessions</div>
                 <p style="font-size: var(--font-size-xs); color: var(--color-gray-500); margin-top: var(--spacing-2);">Currently interacting with AI</p>
             </div>
@@ -48,7 +53,7 @@
                 <div class="stat-card__header">
                     <div class="stat-card__icon stat-card__icon--warning">✓</div>
                 </div>
-                <div class="stat-card__value">38</div>
+                <div class="stat-card__value">{{ resolved_queries|default:"0" }}</div>
                 <div class="stat-card__label">Resolved Queries</div>
                 <p style="font-size: var(--font-size-xs); color: var(--color-gray-500); margin-top: var(--spacing-2);">Questions answered successfully</p>
             </div>
@@ -59,37 +64,29 @@
             <div class="dashboard-card">
                 <div class="dashboard-card__header">
                     <h3 class="dashboard-card__title">Recent Queries</h3>
+                    <a href="{% url 'chat' %}" class="btn btn--sm btn--outline">View All</a>
                 </div>
                 <div class="dashboard-card__body">
                     <ul class="activity-list">
-                        <li class="activity-list__item">
-                            <div class="activity-list__icon activity-list__icon--chat">?</div>
-                            <div class="activity-list__content">
-                                <div class="activity-list__text">What is the process for filing a civil case?</div>
-                                <div class="activity-list__time">2 hours ago</div>
-                            </div>
-                        </li>
-                        <li class="activity-list__item">
-                            <div class="activity-list__icon activity-list__icon--chat">?</div>
-                            <div class="activity-list__content">
-                                <div class="activity-list__text">Explain Section 4 of the Muluki Criminal Code</div>
-                                <div class="activity-list__time">Yesterday</div>
-                            </div>
-                        </li>
-                        <li class="activity-list__item">
-                            <div class="activity-list__icon activity-list__icon--chat">?</div>
-                            <div class="activity-list__content">
-                                <div class="activity-list__text">How to update legal documents online?</div>
-                                <div class="activity-list__time">2 days ago</div>
-                            </div>
-                        </li>
-                        <li class="activity-list__item">
-                            <div class="activity-list__icon activity-list__icon--chat">?</div>
-                            <div class="activity-list__content">
-                                <div class="activity-list__text">What are the penalties under the Evidence Act?</div>
-                                <div class="activity-list__time">3 days ago</div>
-                            </div>
-                        </li>
+                        {% if recent_queries %}
+                            {% for query in recent_queries %}
+                            <li class="activity-list__item">
+                                <div class="activity-list__icon activity-list__icon--chat">?</div>
+                                <div class="activity-list__content">
+                                    <div class="activity-list__text">{{ query.title|truncatewords:10 }}</div>
+                                    <div class="activity-list__time">{{ query.time_ago }}</div>
+                                </div>
+                            </li>
+                            {% endfor %}
+                        {% else %}
+                            <li class="activity-list__item">
+                                <div class="activity-list__icon activity-list__icon--chat">?</div>
+                                <div class="activity-list__content">
+                                    <div class="activity-list__text">No recent queries yet</div>
+                                    <div class="activity-list__time">Start a conversation to see your history</div>
+                                </div>
+                            </li>
+                        {% endif %}
                     </ul>
                 </div>
             </div>
@@ -98,13 +95,47 @@
             <div class="dashboard-card">
                 <div class="dashboard-card__header">
                     <h3 class="dashboard-card__title">Suggested Topics</h3>
+                    <a href="{% url 'personalization' %}" class="btn btn--sm btn--outline">Manage</a>
                 </div>
                 <div class="dashboard-card__body">
                     <div class="flex gap-2" style="flex-wrap: wrap;">
-                        <span class="badge badge--primary">Constitution of Nepal 2072</span>
-                        <span class="badge badge--primary">Muluki Criminal Code</span>
-                        <span class="badge badge--primary">Evidence Act</span>
-                        <span class="badge badge--primary">Company Act 2013</span>
+                        {% if user_preferences.topics %}
+                            {% for topic in user_preferences.topics %}
+                            <span class="badge badge--primary">{{ topic }}</span>
+                            {% endfor %}
+                        {% else %}
+                            <span class="badge badge--primary">Constitution of Nepal 2072</span>
+                            <span class="badge badge--primary">Muluki Criminal Code</span>
+                            <span class="badge badge--primary">Evidence Act</span>
+                            <span class="badge badge--primary">Company Act 2013</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="dashboard-card">
+                <div class="dashboard-card__header">
+                    <h3 class="dashboard-card__title">Quick Actions</h3>
+                </div>
+                <div class="dashboard-card__body">
+                    <div class="quick-actions">
+                        <a href="{% url 'chat' %}" class="quick-action">
+                            <span class="quick-action__icon">💬</span>
+                            <span>Ask a Question</span>
+                        </a>
+                        <a href="{% url 'explorer' %}" class="quick-action">
+                            <span class="quick-action__icon">📚</span>
+                            <span>Browse Laws</span>
+                        </a>
+                        <a href="{% url 'personalization' %}" class="quick-action">
+                            <span class="quick-action__icon">⚙️</span>
+                            <span>Preferences</span>
+                        </a>
+                        <a href="{% url 'home' %}" class="quick-action">
+                            <span class="quick-action__icon">🏠</span>
+                            <span>Home</span>
+                        </a>
                     </div>
                 </div>
             </div>

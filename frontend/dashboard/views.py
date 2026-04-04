@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.http import JsonResponse
 import requests
+from datetime import datetime
 
 NODE_API = "http://localhost:7001/api"
 
@@ -28,22 +29,69 @@ def dashboard(request):
             'Authorization': f'Bearer {token}',
             'Content-Type': 'application/json'
         }
-        response = requests.get(f"{NODE_API}/dashboard/", headers=headers, timeout=5)
-        if response.status_code == 200:
-            dashboard_data = response.json().get('data', {})
-        else:
-            messages.warning(request, "Failed to fetch dashboard data.")
-            dashboard_data = {}
-    except requests.exceptions.RequestException as e:
-        messages.error(request, f"Error fetching dashboard data: {str(e)}")
+        
+        # Fetch dashboard data
         dashboard_data = {}
+        try:
+            response = requests.get(f"{NODE_API}/dashboard/", headers=headers, timeout=5)
+            if response.status_code == 200:
+                dashboard_data = response.json().get('data', {})
+        except requests.exceptions.RequestException as e:
+            messages.warning(request, f"Failed to fetch dashboard data: {str(e)}")
+        
+        # Fetch recent conversations
+        recent_queries = []
+        try:
+            conversations_response = requests.get(f"{NODE_API}/chat/conversations", headers=headers, timeout=5)
+            if conversations_response.status_code == 200:
+                conversations_data = conversations_response.json()
+                # Backend returns list directly, not wrapped in 'data' key
+                if isinstance(conversations_data, list):
+                    # Get last 5 conversations
+                    recent_queries = conversations_data[:5]
+                    # Add time_ago field
+                    for query in recent_queries:
+                        query['time_ago'] = get_time_ago(query.get('updatedAt') or query.get('createdAt'))
+                elif isinstance(conversations_data, dict):
+                    # Fallback if backend returns dict with 'data' key
+                    recent_queries = conversations_data.get('data', [])[:5]
+                    for query in recent_queries:
+                        query['time_ago'] = get_time_ago(query.get('updatedAt') or query.get('createdAt'))
+        except requests.exceptions.RequestException as e:
+            messages.warning(request, f"Failed to fetch recent queries: {str(e)}")
+        
+        # Fetch user preferences
+        user_preferences = {'topics': []}
+        try:
+            preferences_response = requests.get(f"{NODE_API}/preferences/", headers=headers, timeout=5)
+            if preferences_response.status_code == 200:
+                preferences_data = preferences_response.json()
+                if preferences_data.get('success'):
+                    user_preferences = preferences_data.get('preferences', {'topics': []})
+        except requests.exceptions.RequestException as e:
+            messages.warning(request, f"Failed to fetch preferences: {str(e)}")
+        
+        # Calculate stats from conversations
+        total_queries = len(recent_queries)
+        favorite_topics = len(user_preferences.get('topics', []))
+        active_sessions = 1 if recent_queries else 0
+        resolved_queries = total_queries  # Assume all are resolved
+        
+        context = {
+            'user': user,
+            'is_admin': False,
+            'total_queries': total_queries,
+            'favorite_topics': favorite_topics,
+            'active_sessions': active_sessions,
+            'resolved_queries': resolved_queries,
+            'recent_queries': recent_queries,
+            'user_preferences': user_preferences
+        }
+        return render(request, 'dashboard/dashboard.html', context)
     
-    context = {
-        'user': user,
-        'is_admin': False,
-        'dashboard_data': dashboard_data
-    }
-    return render(request, 'dashboard/dashboard.html', context)
+    except Exception as e:
+        messages.error(request, f"Error loading dashboard: {str(e)}")
+        return redirect('home')
 
 
 def admin_dashboard(request, user, token):
@@ -180,3 +228,47 @@ def admin_conversations(request):
             return JsonResponse({'status': 'error', 'message': 'Failed to fetch conversations'}, status=response.status_code)
     except requests.exceptions.RequestException as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+def get_time_ago(date_string):
+    """
+    Convert a date string to a human-readable time ago format.
+    """
+    if not date_string:
+        return 'Unknown'
+    
+    try:
+        # Parse the date string
+        if isinstance(date_string, str):
+            # Try different date formats
+            for fmt in ['%Y-%m-%dT%H:%M:%S.%fZ', '%Y-%m-%dT%H:%M:%SZ', '%Y-%m-%d %H:%M:%S']:
+                try:
+                    date = datetime.strptime(date_string, fmt)
+                    break
+                except ValueError:
+                    continue
+            else:
+                return 'Unknown'
+        else:
+            date = date_string
+        
+        now = datetime.utcnow()
+        diff = now - date
+        
+        seconds = diff.total_seconds()
+        
+        if seconds < 60:
+            return 'Just now'
+        elif seconds < 3600:
+            minutes = int(seconds / 60)
+            return f'{minutes} minute{"s" if minutes > 1 else ""} ago'
+        elif seconds < 86400:
+            hours = int(seconds / 3600)
+            return f'{hours} hour{"s" if hours > 1 else ""} ago'
+        elif seconds < 604800:
+            days = int(seconds / 86400)
+            return f'{days} day{"s" if days > 1 else ""} ago'
+        else:
+            return date.strftime('%Y-%m-%d')
+    except Exception:
+        return 'Unknown'

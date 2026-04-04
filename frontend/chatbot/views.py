@@ -1,351 +1,250 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
-from django.conf import settings
-import requests
 import json
 import os
-import re
+import pickle
+import numpy as np
 
-NODE_API = "http://localhost:7001/api"
-
-# Base directory for the chatbot app
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-# Data files are in static/data folder
-STATIC_DATA_DIR = os.path.join(settings.BASE_DIR, 'static', 'data')
-
-# Also check the old location for backward compatibility
-OLD_DATA_DIR = os.path.join(BASE_DIR, 'data')
-
-# Cache for loaded legal data
-legal_data_cache = None
-
-
-def load_legal_data():
-    """
-    Load all JSON legal data files from the static/data folder
-    """
-    global legal_data_cache
-    
-    if legal_data_cache is not None:
-        return legal_data_cache
-    
-    legal_data_cache = []
-    
-    # Load from static/data folder
-    json_files = [
-        'Civil.json',
-        'Constitution.json',
-        'Criminal1.json',
-        'Criminal2.json',
-        'Criminal3.json',
-        'Evidence_Act.json'
+# Greeting detection function
+def is_greeting(message):
+    """Check if the message is a greeting"""
+    greetings = [
+        'hi', 'hello', 'hey', 'namaste', 'hola', 'yo', 'hii',
+        'hello bot', 'hi assistant', 'hi bot', 'hello assistant',
+        'good morning', 'good afternoon', 'good evening'
     ]
+    message_lower = message.lower().strip()
+    # Remove punctuation for comparison
+    import re
+    message_clean = re.sub(r'[^\w\s]', '', message_lower)
+    return message_clean in greetings or message_lower in greetings
+
+
+# Answer formatter for legal questions
+def format_legal_answer(question, context):
+    """Format legal answer using context from search results"""
+    # Check if it's a greeting
+    if is_greeting(question):
+        return "Hi, I'm your Legal AI Assistant. How can I help you today?"
     
-    for filename in json_files:
-        # First try static/data folder
-        filepath = os.path.join(STATIC_DATA_DIR, filename)
-        if not os.path.exists(filepath):
-            # Fall back to old location
-            filepath = os.path.join(OLD_DATA_DIR, filename)
+    # Check if context is empty or has no results
+    if not context or 'results' not in context or not context['results']:
+        return "No relevant legal information found."
+    
+    results = context['results']
+    
+    # Build formatted answer
+    answer_parts = []
+    
+    # Short summary (2-3 lines)
+    answer_parts.append(f"Based on your query about '{question}', here is the relevant legal information:")
+    answer_parts.append("")
+    
+    # Bullet points with important details
+    for i, result in enumerate(results, 1):
+        law = result.get('law', 'Unknown Law')
+        section = result.get('section', 'N/A')
+        title = result.get('title', 'N/A')
+        content = result.get('content', '')
+        score = result.get('score', 0)
         
-        if os.path.exists(filepath):
-            try:
-                with open(filepath, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                    legal_data_cache.append({
-                        'source': filename.replace('.json', ''),
-                        'data': data
-                    })
-                    print(f"Loaded {filename} successfully")
-            except Exception as e:
-                print(f"Error loading {filename}: {e}")
-        else:
-            print(f"File not found: {filepath}")
+        # Truncate content if too long
+        if len(content) > 300:
+            content = content[:300] + '...'
+        
+        answer_parts.append(f"• **{law} - {section}**: {title}")
+        answer_parts.append(f"  {content}")
+        answer_parts.append(f"  (Relevance: {score:.1%})")
+        answer_parts.append("")
     
-    return legal_data_cache
+    # Final note
+    answer_parts.append("For complete details, please refer to the full legal document.")
+    
+    return "\n".join(answer_parts)
 
 
-def search_legal_data(query):
-    """
-    Search through the legal data for relevant information
-    Handles both flat structure (Civil.json, Constitution.json, Criminal*.json)
-    and nested structure (Evidence_Act.json with chapters -> sections)
-    """
-    data = load_legal_data()
-    query_lower = query.lower()
+# Load preprocessed data from pickle file
+def load_preprocessed_data():
+    """Load preprocessed data from pickle file"""
+    try:
+        # Get the directory where the pickle file is located
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        pickle_path = os.path.join(current_dir, '..', 'static', 'data', 'preprocessed_laws.pkl')
+        pickle_path = os.path.normpath(pickle_path)
+        
+        with open(pickle_path, 'rb') as f:
+            data = pickle.load(f)
+        
+        return data
+    except Exception as e:
+        return {'error': str(e)}
+
+# Load preprocessed data at module level (once when Django starts)
+preprocessed_data = load_preprocessed_data()
+
+def vectorize_query(query, vocab_index, idf, V):
+    """Vectorize query using TF-IDF"""
+    # Simple preprocessing (no NLTK dependency)
+    import re
+    text = query.lower()
+    text = re.sub(r'[^\w\s]', '', text)
+    tokens = text.split()
+    
+    # Manual stopwords
+    stop_words = {
+        "shall", "may", "act", "law", "section", "court", "person",
+        "thereof", "therein", "hereby", "upon", "within", "without",
+        "the", "a", "an", "is", "are", "was", "were", "be", "been",
+        "being", "have", "has", "had", "do", "does", "did", "will",
+        "would", "could", "should", "may", "might", "can", "shall"
+    }
+    tokens = [word for word in tokens if word not in stop_words]
+    
+    vec = np.zeros(V)
+    
+    for word in tokens:
+        if word in vocab_index:
+            idx = vocab_index[word]
+            vec[idx] += 1
+    
+    if len(tokens) > 0:
+        vec = vec / len(tokens)
+    
+    vec = vec * idf
+    
+    return vec, tokens
+
+def cosine_similarity(vec1, vec2):
+    """Calculate cosine similarity between two vectors"""
+    dot = np.dot(vec1, vec2)
+    norm1 = np.linalg.norm(vec1)
+    norm2 = np.linalg.norm(vec2)
+    
+    if norm1 == 0 or norm2 == 0:
+        return 0
+    
+    return dot / (norm1 * norm2)
+
+def search(query, document_matrix, metadata, vocab_index, idf, V, top_k=3):
+    """Search for relevant documents"""
+    query_vec, keywords = vectorize_query(query, vocab_index, idf, V)
+    
+    scores = []
+    
+    for i, doc_vec in enumerate(document_matrix):
+        sim = cosine_similarity(query_vec, doc_vec)
+        scores.append((i, sim))
+    
+    scores.sort(key=lambda x: x[1], reverse=True)
+    
+    top_results = scores[:top_k]
+    
     results = []
     
-    # Keywords to search for
-    keywords = query_lower.split()
+    for idx, score in top_results:
+        results.append((metadata[idx], score))
     
-    for source in data:
-        source_name = source['source']
-        source_data = source['data']
-        
-        # Check if it's nested structure (chapters -> sections) or flat (sections directly)
-        # Evidence_Act.json has: CHAPTER-1 -> Section 1 -> {title, content}
-        # Civil.json has: Section 1 -> {title, content}
-        first_key = next(iter(source_data.keys()), None)
-        is_nested = False
-        
-        if first_key:
-            first_value = source_data[first_key]
-            if isinstance(first_value, dict):
-                # Check if keys look like chapters (contain 'CHAPTER') or sections
-                # If first key contains 'CHAPTER', it's nested
-                if 'CHAPTER' in str(first_key).upper():
-                    is_nested = True
-                else:
-                    # Check if this looks like a section directly with title/content
-                    if 'title' in first_value and 'content' in first_value:
-                        is_nested = False  # Flat structure: Section -> {title, content}
-                    else:
-                        # Could be nested, check the nested values
-                        first_nested_key = next(iter(first_value.keys()), None)
-                        if first_nested_key and isinstance(first_value[first_nested_key], dict):
-                            nested_item = first_value[first_nested_key]
-                            if 'title' in nested_item and 'content' in nested_item:
-                                # This is nested: Chapter -> Section -> {title, content}
-                                is_nested = True
-        
-        if is_nested:
-            # Nested structure: iterate through chapters, then sections
-            for chapter_key, chapter_content in source_data.items():
-                for section_key, section_data in chapter_content.items():
-                    if not isinstance(section_data, dict):
-                        continue
-                    
-                    title = section_data.get('title', '').lower()
-                    content = section_data.get('content', '').lower()
-                    
-                    # Check if any keyword matches
-                    matches = any(keyword in title or keyword in content for keyword in keywords)
-                    
-                    if matches:
-                        results.append({
-                            'source': source_name,
-                            'section': f"{chapter_key} - {section_key}",
-                            'title': section_data.get('title', ''),
-                            'content': section_data.get('content', '')[:500],  # Limit content length
-                            'relevance': sum(1 for kw in keywords if kw in title or kw in content)
-                        })
-        else:
-            # Flat structure: iterate directly through sections
-            for section_key, section_content in source_data.items():
-                if not isinstance(section_content, dict):
-                    continue
-                    
-                title = section_content.get('title', '').lower()
-                content = section_content.get('content', '').lower()
-                
-                # Check if any keyword matches
-                matches = any(keyword in title or keyword in content for keyword in keywords)
-                
-                if matches:
-                    results.append({
-                        'source': source_name,
-                        'section': section_key,
-                        'title': section_content.get('title', ''),
-                        'content': section_content.get('content', '')[:500],  # Limit content length
-                        'relevance': sum(1 for kw in keywords if kw in title or kw in content)
-                    })
-    
-    # Sort by relevance (most matches first)
-    results.sort(key=lambda x: x['relevance'], reverse=True)
-    
-    return results[:5]  # Return top 5 results
+    return results, keywords
 
-
-def generate_answer(query, search_results):
-    """
-    Generate a human-readable answer based on search results
-    """
-    if not search_results:
-        return "I couldn't find specific information related to your query in the legal database. Please try a different question or be more specific about the legal topic you're asking about."
-    
-    answer = "Based on the legal documents, here's what I found:\n\n"
-    
-    for i, result in enumerate(search_results, 1):
-        answer += f"**{result['title']}**\n"
-        answer += f"(Source: {result['source']}, Section: {result['section']})\n\n"
+def execute_search(query):
+    """Execute search using preprocessed data"""
+    try:
+        if 'error' in preprocessed_data:
+            return {'error': preprocessed_data['error']}
         
-        content = result['content'].strip()
-        if content:
-            answer += f"{content}\n\n"
-        answer += "---\n\n"
-    
-    return answer
-
+        document_matrix = preprocessed_data['document_matrix']
+        metadata = preprocessed_data['metadata']
+        vocab_index = preprocessed_data['vocab_index']
+        idf = preprocessed_data['idf']
+        V = preprocessed_data['V']
+        
+        results, keywords = search(query, document_matrix, metadata, vocab_index, idf, V, top_k=3)
+        
+        # Format results for response
+        formatted_results = []
+        for meta, score in results:
+            formatted_results.append({
+                'law': meta.get('law', ''),
+                'section': meta.get('section', ''),
+                'title': meta.get('title', ''),
+                'content': meta.get('content', ''),
+                'score': float(score)
+            })
+        
+        return {'results': formatted_results, 'keywords': keywords}
+    except Exception as e:
+        return {'error': str(e)}
 
 def chat(request):
-    """
-    Render chat page - requires authentication
-    """
-    user = request.session.get('user')
-    token = request.session.get('token')
+    """Handle chat page and chat API requests"""
+    # Initialize chat history in session if not exists
+    if 'chat_history' not in request.session:
+        request.session['chat_history'] = []
     
-    if not user or not token:
-        return redirect('login')
+    messages = []
     
-    context = {
-        'user': user,
-        'token': token,
-    }
-    return render(request, 'chatbot/chat.html', context)
+    if request.method == 'POST':
+        # Handle form submission
+        user_query = request.POST.get('message', '')
+        if user_query:
+            # Add user message to chat
+            messages.append({'text': user_query, 'sender': 'user'})
+            
+            # Execute search
+            answer = execute_search(user_query)
+            
+            # Format answer using the new formatter
+            formatted_answer = format_legal_answer(user_query, answer)
+            messages.append({'text': formatted_answer, 'sender': 'ai'})
+            
+            # Save conversation to chat history
+            conversation = {
+                'id': len(request.session['chat_history']) + 1,
+                'title': user_query[:50] + '...' if len(user_query) > 50 else user_query,
+                'messages': messages.copy(),
+                'timestamp': str(request.session.get('_session_id', ''))
+            }
+            request.session['chat_history'].append(conversation)
+            request.session.modified = True
+    
+    # Get chat history for sidebar
+    chat_history = request.session.get('chat_history', [])
+    
+    # Render template with messages and chat history
+    return render(request, 'chatbot/chat.html', {
+        'messages': messages,
+        'chat_history': chat_history
+    })
 
+def chat_view(request):
+    """Render chat.html template"""
+    return render(request, 'chatbot/chat.html')
 
 @csrf_exempt
+@require_http_methods(["POST"])
 def send_message(request):
-    """
-    Handle incoming chat messages and return AI-generated responses
-    """
-    # Only allow POST requests
-    if request.method != 'POST':
-        return JsonResponse({'error': 'Only POST method allowed'}, status=405)
-    
+    """Send a message and get response"""
     try:
-        # Debug: print request info
-        print(f"Request method: {request.method}")
-        print(f"Request body: {request.body}")
+        data = json.loads(request.body)
+        user_message = data.get('message', '')
         
-        # Parse the request body - support both 'message' and 'question' fields
-        if not request.body:
-            return JsonResponse({'error': 'Empty request body'}, status=400)
-            
-        body = json.loads(request.body)
-        # Accept either 'message' or 'question' field
-        message = body.get('message', '').strip() or body.get('question', '').strip()
+        answer = execute_search(user_message)
         
-        if not message:
-            return JsonResponse({'error': 'Message is required'}, status=400)
+        # Format answer using the new formatter
+        formatted_answer = format_legal_answer(user_message, answer)
         
-        # First, try to search local legal data
-        search_results = search_legal_data(message)
-        
-        # Generate answer from search results
-        answer = generate_answer(message, search_results)
-        
-        # Try to also save conversation to backend (MongoDB)
-        token = request.session.get('token')
-        if token:
-            try:
-                # First create/save the user's message
-                save_resp = requests.post(
-                    f"{NODE_API}/chat/save",
-                    json={
-                        'message': message,
-                        'type': 'user'
-                    },
-                    headers={
-                        'Authorization': f'Bearer {token}',
-                        'Content-Type': 'application/json'
-                    },
-                    timeout=5
-                )
-                print(f"Save user message response: {save_resp.status_code}")
-                
-                # Then save the bot response
-                if save_resp.status_code == 200:
-                    save_resp2 = requests.post(
-                        f"{NODE_API}/chat/save",
-                        json={
-                            'message': answer,
-                            'type': 'bot'
-                        },
-                        headers={
-                            'Authorization': f'Bearer {token}',
-                            'Content-Type': 'application/json'
-                        },
-                        timeout=5
-                    )
-                    print(f"Save bot message response: {save_resp2.status_code}")
-            except Exception as e:
-                print(f"Error saving to backend: {e}")
-        
-        # If no local results, try the Node.js backend as fallback
-        if not search_results:
-            token = request.session.get('token')
-            if token:
-                try:
-                    response = requests.post(
-                        f"{NODE_API}/chat/message",
-                        json={'message': message},
-                        headers={'Authorization': f'Bearer {token}'},
-                        timeout=10
-                    )
-                    if response.status_code == 200:
-                        data = response.json()
-                        if data.get('response'):
-                            answer = data['response']
-                except Exception as e:
-                    print(f"Backend API error: {e}")
-        
-        return JsonResponse({
-            'success': True,
-            'message': answer,
-            'sources': [r['source'] for r in search_results] if search_results else []
-        })
-        
-    except json.JSONDecodeError:
-        return JsonResponse({'error': 'Invalid JSON in request body'}, status=400)
+        return JsonResponse({'answer': formatted_answer})
     except Exception as e:
-        print(f"Error processing message: {e}")
-        return JsonResponse({'error': str(e)}, status=500)
-
+        return JsonResponse({'error': str(e)}, status=400)
 
 def get_conversations(request):
-    """
-    Get list of user's conversations
-    """
-    user = request.session.get('user')
-    token = request.session.get('token')
-    
-    if not user or not token:
-        return JsonResponse({'error': 'Authentication required'}, status=401)
-    
-    try:
-        # Try to get conversations from backend
-        response = requests.get(
-            f"{NODE_API}/chat/conversations",
-            headers={'Authorization': f'Bearer {token}'},
-            timeout=10
-        )
-        
-        if response.status_code == 200:
-            return JsonResponse(response.json())
-        else:
-            return JsonResponse({'conversations': []})
-            
-    except Exception as e:
-        print(f"Error getting conversations: {e}")
-        return JsonResponse({'conversations': []})
-
+    """Get list of conversations"""
+    # Placeholder implementation
+    return JsonResponse({'conversations': []})
 
 def get_conversation_history(request, conversation_id):
-    """
-    Get history for a specific conversation
-    """
-    user = request.session.get('user')
-    token = request.session.get('token')
-    
-    if not user or not token:
-        return JsonResponse({'error': 'Authentication required'}, status=401)
-    
-    try:
-        response = requests.get(
-            f"{NODE_API}/chat/conversations/{conversation_id}",
-            headers={'Authorization': f'Bearer {token}'},
-            timeout=10
-        )
-        
-        if response.status_code == 200:
-            return JsonResponse(response.json())
-        else:
-            return JsonResponse({'messages': []})
-            
-    except Exception as e:
-        print(f"Error getting conversation history: {e}")
-        return JsonResponse({'messages': []})
+    """Get conversation history"""
+    # Placeholder implementation
+    return JsonResponse({'messages': []})

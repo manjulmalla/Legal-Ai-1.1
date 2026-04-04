@@ -3,11 +3,21 @@
 
 {% block extra_head %}
 <link rel="stylesheet" href="{% static 'css/pages/personalization.css' %}">
+
 {% endblock %}
 
 {% block content %}
+<div class="{% if user_preferences.theme == 'dark' %}personalization-page-dark{% else %}personalization-page-light{% endif %}">
 <section class="section personalization">
-    <div class="container">
+    <div class="container personalization__container">
+        <!-- CSS-Only Theme Toggle -->
+        <label class="theme-toggle-switch">
+            <input type="checkbox" name="theme-toggle" 
+                {% if user_preferences.theme == 'dark' %}checked{% endif %}
+                onchange="var themeVal = this.checked ? 'dark' : 'light'; document.querySelector('input[name=theme][value=' + themeVal + ']').checked = true; document.getElementById('preferencesForm').submit();">
+            <span>Dark Mode</span>
+        </label>
+
         <!-- Page Header -->
         <div class="personalization__header">
             <h1 class="personalization__title">Personalization Settings</h1>
@@ -24,12 +34,12 @@
         {% endif %}
 
         <!-- Preferences Form -->
-        <form method="POST" action="{% url 'save_preferences' %}" class="personalization__form" style="max-width: 700px;">
+        <form method="POST" action="{% url 'save_preferences' %}" class="personalization__form" id="preferencesForm" style="max-width: 700px;">
             {% csrf_token %}
             
             <!-- Topics Selection -->
             <div style="margin-bottom: var(--spacing-8);">
-                <h3 style="margin-bottom: var(--spacing-4); color: var(--color-gray-800);">Select Your Areas of Interest</h3>
+                <h3 style="margin-bottom: var(--spacing-4); color: var(--personalization-text-primary);">Select Your Areas of Interest</h3>
                 <p class="personalization__hint">Choose the legal topics you want to receive updates about</p>
                 
                 <div class="personalization__checkbox-group" style="margin-top: var(--spacing-4);">
@@ -53,23 +63,14 @@
                             {% if 'evidence' in user_preferences.topics %}checked{% endif %}>
                         <span>Evidence Act</span>
                     </label>
-                    <label>
-                        <input type="checkbox" name="topics" value="company" 
-                            {% if 'company' in user_preferences.topics %}checked{% endif %}>
-                        <span>Company Law</span>
-                    </label>
-                    <label>
-                        <input type="checkbox" name="topics" value="property" 
-                            {% if 'property' in user_preferences.topics %}checked{% endif %}>
-                        <span>Property & Land Law</span>
-                    </label>
+        
                 </div>
             </div>
 
             
             <!-- Language Selection -->
             <div style="margin-bottom: var(--spacing-8);">
-                <h3 style="margin-bottom: var(--spacing-4); color: var(--color-gray-800);">Preferred Language</h3>
+                <h3 style="margin-bottom: var(--spacing-4); color: var(--personalization-text-primary);">Preferred Language</h3>
                 
                 <div class="personalization__radio-group">
                     <label>
@@ -87,7 +88,7 @@
 
             <!-- Theme Selection -->
             <div style="margin-bottom: var(--spacing-8);">
-                <h3 style="margin-bottom: var(--spacing-4); color: var(--color-gray-800);">Choose Your Theme</h3>
+                <h3 style="margin-bottom: var(--spacing-4); color: var(--personalization-text-primary);">Choose Your Theme</h3>
                 
                 <div class="personalization__theme-options">
                     <label class="personalization__theme-option">
@@ -95,8 +96,8 @@
                             {% if user_preferences.theme == 'light' %}checked{% endif %}>
                         <div class="theme-card">
                             <div style="font-size: 32px; margin-bottom: var(--spacing-2);">☀️</div>
-                            <div style="font-weight: 600;">Light Mode</div>
-                            <p style="font-size: var(--font-size-sm); color: var(--color-gray-500); margin: var(--spacing-2) 0 0;">Clean & Bright</p>
+                            <div style="font-weight: 600; color: var(--personalization-text-primary);">Light Mode</div>
+                            <p style="font-size: var(--font-size-sm); color: var(--personalization-text-muted); margin: var(--spacing-2) 0 0;">Clean & Bright</p>
                         </div>
                     </label>
                     <label class="personalization__theme-option">
@@ -104,8 +105,8 @@
                             {% if user_preferences.theme == 'dark' %}checked{% endif %}>
                         <div class="theme-card">
                             <div style="font-size: 32px; margin-bottom: var(--spacing-2);">🌙</div>
-                            <div style="font-weight: 600;">Dark Mode</div>
-                            <p style="font-size: var(--font-size-sm); color: var(--color-gray-500); margin: var(--spacing-2) 0 0;">Easy on Eyes</p>
+                            <div style="font-weight: 600; color: var(--personalization-text-primary);">Dark Mode</div>
+                            <p style="font-size: var(--font-size-sm); color: var(--personalization-text-muted); margin: var(--spacing-2) 0 0;">Easy on Eyes</p>
                         </div>
                     </label>
                 </div>
@@ -113,16 +114,46 @@
 
             <!-- Submit Button -->
             <div style="text-align: center; margin-top: var(--spacing-8);">
-                <button type="submit" class="btn btn--primary" style="padding: var(--spacing-4) var(--spacing-10); font-size: var(--font-size-lg);">
+                <button type="submit" class="btn btn--primary" id="submitBtn" style="padding: var(--spacing-4) var(--spacing-10); font-size: var(--font-size-lg);">
                     Save Preferences
                 </button>
             </div>
 
             <!-- Disclaimer -->
             <div class="personalization__disclaimer">
-                ⚠️ Note: Your preferences are saved locally in your session. This helps personalize your experience with the Legal AI Assistant.
+                ⚠️ Note: Your preferences are saved to your account and will be synced across devices.
             </div>
         </form>
     </div>
 </section>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('preferencesForm');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    form.addEventListener('submit', function(e) {
+        // Show loading state
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner"></span>Saving...';
+        form.classList.add('loading');
+        
+        // Let the form submit normally
+        // The page will reload with the response
+    });
+    
+    // Auto-hide alerts after 5 seconds
+    const alerts = document.querySelectorAll('.alert');
+    alerts.forEach(function(alert) {
+        setTimeout(function() {
+            alert.style.opacity = '0';
+            alert.style.transition = 'opacity 0.5s';
+            setTimeout(function() {
+                alert.style.display = 'none';
+            }, 500);
+        }, 5000);
+    });
+});
+</script>
 {% endblock %}

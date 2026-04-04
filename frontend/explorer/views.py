@@ -9,6 +9,7 @@ import json
 import requests
 
 
+
 # Simple Nepali translations for common legal terms
 TRANSLATIONS = {
     'Civil Law': 'नागरिक कानुन',
@@ -232,6 +233,27 @@ def explorer(request):
     except EmptyPage:
         laws = paginator.page(paginator.num_pages)
     
+    # Load PDF data
+    base_path = os.path.join(settings.BASE_DIR, 'static', 'pdfs')
+    pdf_data = {}
+    
+    # Loop through folders
+    for folder in os.listdir(base_path):
+        folder_path = os.path.join(base_path, folder)
+        
+        if os.path.isdir(folder_path):
+            pdf_files = []
+            
+            # Loop through files in each folder
+            for file in os.listdir(folder_path):
+                if file.lower().endswith('.pdf'):
+                    pdf_files.append({
+                        'name': file,
+                        'path': f'pdfs/{folder}/{file}'
+                    })
+            
+            pdf_data[folder] = pdf_files
+    
     context = {
         'laws': laws,
         'paginator': paginator,
@@ -240,5 +262,34 @@ def explorer(request):
         'selected_category': selected_category,
         'lang': lang,
         'ui': ui_texts,
+        'pdf_data': pdf_data,
     }
     return render(request, 'explorer/explorer.html', context)
+
+
+# pdf
+
+
+def pdf_list(request):
+    base_path = os.path.join(settings.BASE_DIR, 'static', 'pdfs')
+
+    pdf_data = {}
+
+    # Loop through folders
+    for folder in os.listdir(base_path):
+        folder_path = os.path.join(base_path, folder)
+
+        if os.path.isdir(folder_path):
+            pdf_files = []
+
+            # Loop through files in each folder
+            for file in os.listdir(folder_path):
+                if file.lower().endswith('.pdf'):
+                    pdf_files.append({
+                        'name': file,
+                        'path': f'pdfs/{folder}/{file}'
+                    })
+
+            pdf_data[folder] = pdf_files
+
+    return render(request, 'pdf_list.html', {'pdf_data': pdf_data})
