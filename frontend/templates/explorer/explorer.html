@@ -8,7 +8,7 @@
 {% block content %}
 <section class="section">
     <div class="container">
-        <div class="explorer">
+        <div class="explorer {% if user_preferences.theme == 'dark' %}explorer--dark{% endif %}">
 
             <!-- Header -->
             <div class="explorer__header">

@@ -23,8 +23,8 @@ def personalization(request):
     user_preferences = {
         'topics': [],
         'notifications': [],
-        'language': 'en',
-        'theme': 'light'
+        'language': request.session.get('language', 'en'),
+        'theme': request.session.get('theme', 'light')
     }
     
     # Fetch preferences from backend API
@@ -96,9 +96,11 @@ def save_preferences(request):
             response_data = response.json()
             if response_data.get('success'):
                 messages.success(request, "Preferences saved successfully!")
-                # Also save to session as backup
+                # Also save to session as backup and for instant application
                 request.session['user_preferences'] = json.dumps(data)
                 request.session.modified = True
+                request.session['theme'] = theme
+                request.session['language'] = language
             else:
                 messages.error(request, f"Error saving preferences: {response_data.get('message', 'Unknown error')}")
         else:
@@ -120,6 +122,8 @@ def save_preferences(request):
                 'theme': theme
             }
             request.session['user_preferences'] = json.dumps(data)
+            request.session['theme'] = theme
+            request.session['language'] = language
             request.session.modified = True
             messages.warning(request, "Preferences saved locally (server unavailable)")
         except Exception as inner_e:

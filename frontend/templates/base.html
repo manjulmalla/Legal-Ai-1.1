@@ -1,6 +1,6 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ user_preferences.language|default:'en' }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,9 +12,58 @@
     <link rel="stylesheet" href="{% static 'css/components.css' %}">
     <link rel="stylesheet" href="{% static 'css/pages/home.css' %}">
 
+    <style>
+        :root {
+            --theme-bg-primary: #ffffff;
+            --theme-bg-secondary: #f5f7fa;
+            --theme-text-primary: #1a1a2e;
+            --theme-text-secondary: #4a4a68;
+            --theme-border-color: #e0e0e0;
+        }
+        {% if user_preferences.theme == 'dark' %}
+        :root {
+            --theme-bg-primary: #1a1a2e;
+            --theme-bg-secondary: #16213e;
+            --theme-text-primary: #f0f0f0;
+            --theme-text-secondary: #a0a0b0;
+            --theme-border-color: #2a2a4e;
+        }
+        {% endif %}
+        
+        body {
+            background-color: var(--theme-bg-primary);
+            color: var(--theme-text-primary);
+        }
+        
+        .navbar, .footer, .main-content {
+            background-color: var(--theme-bg-primary);
+            color: var(--theme-text-primary);
+        }
+        
+        .navbar {
+            border-bottom: 1px solid var(--theme-border-color);
+        }
+        
+        .footer {
+            border-top: 1px solid var(--theme-border-color);
+        }
+        
+        a, .navbar__link, .navbar__brand, .footer__member {
+            color: var(--theme-text-primary);
+        }
+        
+        .navbar__link:hover {
+            color: #3b82f6;
+        }
+        
+        .footer__project {
+            color: var(--theme-text-secondary);
+        }
+    </style>
+
     {% block extra_head %}{% endblock %}
 </head>
-<body class="page-wrapper">
+<body class="page-wrapper {% if user_preferences.theme == 'dark' %}theme-dark{% else %}theme-light{% endif %}">
 
     <!-- Navbar -->
     <header class="navbar">

@@ -3,6 +3,30 @@
 
 {% block extra_head %}
 <link rel="stylesheet" href="{% static 'css/pages/dashboard.css' %}">
+<style>
+    .dashboard-header__title {
+        color: var(--theme-text-primary);
+    }
+    .dashboard-header p {
+        color: var(--theme-text-secondary);
+    }
+    .stat-card, .dashboard-card, .dashboard-card__body {
+        background-color: var(--theme-bg-secondary);
+        border-color: var(--theme-border-color);
+    }
+    .stat-card__label, .stat-card p {
+        color: var(--theme-text-secondary);
+    }
+    .activity-list__text {
+        color: var(--theme-text-primary);
+    }
+    .activity-list__time {
+        color: var(--theme-text-secondary);
+    }
+    .dashboard-card__title {
+        color: var(--theme-text-primary);
+    }
+</style>
 {% endblock %}
 
 {% block content %}

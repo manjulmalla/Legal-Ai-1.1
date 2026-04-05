@@ -3,19 +3,47 @@
 
 {% block extra_head %}
 <link rel="stylesheet" href="{% static 'css/pages/home.css' %}">
+<style>
+    .home-card {
+        background-color: var(--theme-bg-secondary);
+        border: 1px solid var(--theme-border-color);
+    }
+    .home-card p {
+        color: var(--theme-text-secondary);
+    }
+    .home-header h1 {
+        color: var(--theme-text-primary);
+    }
+    .home-header p {
+        color: var(--theme-text-secondary);
+    }
+    .form-input {
+        background-color: var(--theme-bg-primary);
+        border: 1px solid var(--theme-border-color);
+        color: var(--theme-text-primary);
+    }
+    .form-input::placeholder {
+        color: var(--theme-text-secondary);
+    }
+    .alert--warning {
+        background-color: var(--theme-bg-secondary);
+        border: 1px solid var(--theme-border-color);
+        color: var(--theme-text-secondary);
+    }
+</style>
 {% endblock %}
 
 {% block content %}
 <section class="section">
     <div class="container">
         <!-- Page Header -->
-        <div class="page-header" style="text-align: center; margin-bottom: var(--spacing-8);">
+        <div class="page-header home-header" style="text-align: center; margin-bottom: var(--spacing-8);">
             <h1>AI-Powered Legal Assistance</h1>
-            <p style="color: var(--color-gray-600); font-size: var(--font-size-lg);">Welcome, {{ user.name|default:"User" }}! Ask questions, explore laws, and get guidance.</p>
+            <p style="font-size: var(--font-size-lg);">Welcome, {{ user.name|default:"User" }}! Ask questions, explore laws, and get guidance.</p>
         </div>
 
         <!-- Search Form -->
-        <div class="card" style="max-width: 600px; margin: 0 auto var(--spacing-8);">
+        <div class="card home-card" style="max-width: 600px; margin: 0 auto var(--spacing-8);">
             <div class="card__body">
                 <form id="questionForm" method="POST" action="{% url 'search_questions' %}">
                     {% csrf_token %}
@@ -31,25 +59,25 @@
 
         <!-- Features -->
         <div class="grid grid-cols-3 grid-gap-4" style="margin-top: var(--spacing-8);">
-            <div class="card">
+            <div class="card home-card">
                 <div class="card__body" style="text-align: center;">
                     <div style="font-size: 40px; margin-bottom: var(--spacing-3);">✓</div>
                     <h3 style="margin-bottom: var(--spacing-2);">Legal Chatbot</h3>
-                    <p style="color: var(--color-gray-600); margin: 0;">Get instant answers to legal questions</p>
+                    <p style="margin: 0;">Get instant answers to legal questions</p>
                 </div>
             </div>
-            <div class="card">
+            <div class="card home-card">
                 <div class="card__body" style="text-align: center;">
                     <div style="font-size: 40px; margin-bottom: var(--spacing-3);">✓</div>
                     <h3 style="margin-bottom: var(--spacing-2);">Law Explorer</h3>
-                    <p style="color: var(--color-gray-600); margin: 0;">Browse and understand legal documents</p>
+                    <p style="margin: 0;">Browse and understand legal documents</p>
                 </div>
             </div>
-            <div class="card">
+            <div class="card home-card">
                 <div class="card__body" style="text-align: center;">
                     <div style="font-size: 40px; margin-bottom: var(--spacing-3);">✓</div>
                     <h3 style="margin-bottom: var(--spacing-2);">Personalized</h3>
-                    <p style="color: var(--color-gray-600); margin: 0;">Get tailored legal guidance</p>
+                    <p style="margin: 0;">Get tailored legal guidance</p>
                 </div>
             </div>
         </div>

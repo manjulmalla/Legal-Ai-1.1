@@ -133,6 +133,50 @@ document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('preferencesForm');
     const submitBtn = document.getElementById('submitBtn');
     
+    // Apply theme immediately when radio buttons change
+    const themeRadios = document.querySelectorAll('input[name="theme"]');
+    themeRadios.forEach(function(radio) {
+        radio.addEventListener('change', function() {
+            applyTheme(this.value);
+        });
+    });
+    
+    function applyTheme(theme) {
+        document.body.classList.remove('theme-light', 'theme-dark');
+        document.body.classList.add('theme-' + theme);
+        
+        // Update CSS variables
+        const root = document.documentElement;
+        if (theme === 'dark') {
+            root.style.setProperty('--theme-bg-primary', '#1a1a2e');
+            root.style.setProperty('--theme-bg-secondary', '#16213e');
+            root.style.setProperty('--theme-text-primary', '#f0f0f0');
+            root.style.setProperty('--theme-text-secondary', '#a0a0b0');
+            root.style.setProperty('--theme-border-color', '#2a2a4e');
+            document.body.style.backgroundColor = '#1a1a2e';
+            document.body.style.color = '#f0f0f0';
+        } else {
+            root.style.setProperty('--theme-bg-primary', '#ffffff');
+            root.style.setProperty('--theme-bg-secondary', '#f5f7fa');
+            root.style.setProperty('--theme-text-primary', '#1a1a2e');
+            root.style.setProperty('--theme-text-secondary', '#4a4a68');
+            root.style.setProperty('--theme-border-color', '#e0e0e0');
+            document.body.style.backgroundColor = '#ffffff';
+            document.body.style.color = '#1a1a2e';
+        }
+        
+        // Apply to personalization page specific classes
+        const pageWrapper = document.querySelector('.personalization-page-dark, .personalization-page-light');
+        if (pageWrapper) {
+            pageWrapper.classList.remove('personalization-page-dark', 'personalization-page-light');
+            pageWrapper.classList.add('personalization-page-' + theme);
+        }
+    }
+    
+    // Initialize theme on page load
+    const currentTheme = document.querySelector('input[name="theme"]:checked').value;
+    applyTheme(currentTheme);
+    
     form.addEventListener('submit', function(e) {
         // Show loading state
         submitBtn.disabled = true;
